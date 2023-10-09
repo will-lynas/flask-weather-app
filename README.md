@@ -2,5 +2,5 @@
 
 ## Running
 
-`docker build --tag python-docker .`
+`docker build --tag python-docker .` \
 `docker run -p 5000:5000 python-docker`
