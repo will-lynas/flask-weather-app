@@ -26,23 +26,6 @@ class WeatherData(db.Model):
 with app.app_context():
     db.create_all()
 
-@app.route('/')
-def index():
-    last_result = db.session.query(WeatherData).order_by(WeatherData.time.desc()).first()
-    if last_result:
-        last_fetch = last_result.time
-        last_fetch_delta = time.time() - last_fetch
-        # Only fetch more frequently than once every cache_time seconds
-        cache_time = 10 * 60
-        if last_fetch_delta > cache_time:
-            last_result = api_fetch("UK", "London")
-            last_fetch_delta = 0
-    else:
-        last_result = api_fetch("UK", "London")
-        last_fetch_delta = 0
-    return f"Temperature: {last_result.temp} Time since updated: {last_fetch_delta}"
-
-
 @app.route('/<country_name>/<city_name>')
 def city_weather(country_name, city_name):
     last_result = db.session.query(WeatherData).filter(WeatherData.country.like(country_name), WeatherData.city.like(city_name)).order_by(WeatherData.time.desc()).first()
