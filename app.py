@@ -33,20 +33,28 @@ def index():
         # Only fetch more frequently than once every cache_time seconds
         cache_time = 10 * 60
         if last_fetch_delta > cache_time:
-            last_result = api_fetch()
+            last_result = api_fetch("UK", "London")
             last_fetch_delta = 0
     else:
-        last_result = api_fetch()
+        last_result = api_fetch("UK", "London")
         last_fetch_delta = 0
     return f"Temperature: {last_result.temp} Time since updated: {last_fetch_delta}"
 
-def api_fetch() -> WeatherData:
+
+@app.route('/<country_name>/<city_name>')
+def city_weather(country_name, city_name):
+    result = api_fetch(country_name, city_name)
+    return f"Country: {country_name}. City: {city_name}. Temperature: {result.temp}."
+
+
+def api_fetch(country_name, city_name) -> WeatherData:
     with open('api_key.txt') as f:
         api_key = f.read().strip()
     params = {
-            "q": "London,uk",
-            "APPID": api_key
-            }
+            "q": f"{city_name}, {country_name}",
+            "APPID": api_key,
+            "units": "metric"
+        }
     endpoint = "http://api.openweathermap.org/data/2.5/weather"
     response = requests.get(endpoint, params=params).json()
     weather_data = WeatherData(temp=response["main"]["temp"], time=time.time())
