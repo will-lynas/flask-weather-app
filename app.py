@@ -50,7 +50,7 @@ def city_weather(country_name, city_name):
         last_fetch = last_result.time
         last_fetch_delta = time.time() - last_fetch
         # Only fetch more frequently than once every cache_time seconds
-        cache_time = 10
+        cache_time = 10 * 60
         if last_fetch_delta > cache_time:
             last_result = api_fetch(country_name, city_name)
             last_fetch_delta = 0
