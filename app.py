@@ -25,7 +25,7 @@ class WeatherData(db.Model):
     time = db.Column(db.Float, nullable=False)
 
     def __repr__(self):
-        return f"<{self.__class__.__name__} {self.temp} {self.time}>"
+        return f"<{self.__class__.__name__} {self.temp} {self.time} {self.country} {self.city}>"
 
 
 
@@ -48,7 +48,7 @@ def city_weather(country_name, city_name):
 
 
 def api_fetch(country_name, city_name) -> WeatherData:
-    last_result = db.session.query(WeatherData).filter(WeatherData.country.is_(country_name), WeatherData.city.is_(city_name)).order_by(WeatherData.time.desc()).first()
+    last_result = db.session.query(WeatherData).filter(WeatherData.country == country_name, WeatherData.city == city_name).order_by(WeatherData.time.desc()).first()
     if last_result:
         last_fetch = last_result.time
         last_fetch_delta = time.time() - last_fetch
@@ -71,5 +71,4 @@ def api_fetch(country_name, city_name) -> WeatherData:
     weather_data = WeatherData(country=country_name, city=city_name, temp=response_json["main"]["temp"], time=time.time())
     db.session.add(weather_data)
     db.session.commit()
-    last_fetch_delta = 0
     return weather_data
