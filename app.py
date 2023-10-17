@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, redirect
 import requests
 from flask_sqlalchemy import SQLAlchemy
 import os
@@ -13,43 +13,62 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+class CityNotFoundError(Exception):
+    def __init__(self):
+        super().__init__("City not found")
+
 class WeatherData(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    country = db.Column(db.String, nullable=False)
+    city = db.Column(db.String, nullable=False)
     temp = db.Column(db.Float, nullable=False)
     time = db.Column(db.Float, nullable=False)
 
     def __repr__(self):
-        return f"<{self.__class__.__name__} {self.temp} {self.time}>"
+        return f"<{self.__class__.__name__} {self.temp} {self.time} {self.country} {self.city}>"
+
+
 
 with app.app_context():
     db.create_all()
 
+
 @app.route('/')
 def index():
-    last_result = db.session.query(WeatherData).order_by(WeatherData.time.desc()).first()
+    return redirect('/UK/London')
+
+
+@app.route('/<country_name>/<city_name>')
+def city_weather(country_name, city_name): 
+    try:
+        result = api_fetch(country_name, city_name)
+    except CityNotFoundError:
+        return 'City not Found', 404
+    return f"Country: {country_name}. City: {city_name}. Temperature: {result.temp}. Time since updated: {time.time() - result.time}"
+
+
+def api_fetch(country_name, city_name) -> WeatherData:
+    last_result = db.session.query(WeatherData).filter(WeatherData.country == country_name, WeatherData.city == city_name).order_by(WeatherData.time.desc()).first()
     if last_result:
         last_fetch = last_result.time
         last_fetch_delta = time.time() - last_fetch
-        # Only fetch more frequently than once every cache_time seconds
-        cache_time = 10 * 60
-        if last_fetch_delta > cache_time:
-            last_result = api_fetch()
-            last_fetch_delta = 0
-    else:
-        last_result = api_fetch()
-        last_fetch_delta = 0
-    return f"Temperature: {last_result.temp} Time since updated: {last_fetch_delta}"
+        cache_time = 10
+        if last_fetch_delta <= cache_time:
+            return last_result
 
-def api_fetch() -> WeatherData:
     with open('api_key.txt') as f:
         api_key = f.read().strip()
     params = {
-            "q": "London,uk",
-            "APPID": api_key
-            }
+            "q": f"{city_name}, {country_name}",
+            "APPID": api_key,
+            "units": "metric"
+        }
     endpoint = "http://api.openweathermap.org/data/2.5/weather"
-    response = requests.get(endpoint, params=params).json()
-    weather_data = WeatherData(temp=response["main"]["temp"], time=time.time())
+    response = requests.get(endpoint, params=params)
+    if not response:
+        raise CityNotFoundError
+    response_json = response.json()
+    weather_data = WeatherData(country=country_name, city=city_name, temp=response_json["main"]["temp"], time=time.time())
     db.session.add(weather_data)
     db.session.commit()
     return weather_data
