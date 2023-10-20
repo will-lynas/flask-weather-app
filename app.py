@@ -1,4 +1,4 @@
-from flask import Flask, redirect
+from flask import Flask, redirect, render_template
 import requests
 from flask_sqlalchemy import SQLAlchemy
 import os
@@ -41,10 +41,11 @@ def index():
 @app.route('/<country_name>/<city_name>')
 def city_weather(country_name, city_name): 
     try:
-        result = api_fetch(country_name, city_name)
+        city_weather = api_fetch(country_name, city_name)
     except CityNotFoundError:
         return 'City not Found', 404
-    return f"Country: {country_name}. City: {city_name}. Temperature: {result.temp}. Time since updated: {time.time() - result.time}"
+    time_since_updated = time.time() - city_weather.time
+    return render_template('city_weather.html', city_weather=city_weather, time_since_updated=time_since_updated)
 
 
 def api_fetch(country_name, city_name) -> WeatherData:
