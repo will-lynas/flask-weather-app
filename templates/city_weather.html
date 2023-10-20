@@ -1,0 +1,20 @@
+{% extends "bootstrap/base.html" %}
+
+{% block html_attribs %}
+lang="en"
+{% endblock %}
+
+{% block title %}
+Weather in {{ city_weather.country }}, {{ city_weather.city }}
+{% endblock %}
+
+{% block styles %}
+{{super()}}
+<link rel="stylesheet" href="{{url_for('.static', filename='styles.css')}}">
+{% endblock %}
+
+{% block content %}
+<h1>Weather in {{ city_weather.city }}, {{ city_weather.country }}:</h1>
+<h2>Temperature is {{ city_weather.temp }}</h2>
+<h2>Time since updated is {{ time_since_updated }}</h2>
+{% endblock %}
