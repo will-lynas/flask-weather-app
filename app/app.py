@@ -1,14 +1,17 @@
 import os
 import time
 
-from flask import Flask, redirect
 import requests
+
+from flask import Flask, redirect, render_template
 from flask_sqlalchemy import SQLAlchemy
+from flask_bootstrap import Bootstrap
 from werkzeug.wrappers import Response
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
+Bootstrap(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'database.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -38,11 +41,13 @@ def index() -> Response:
 @app.route('/<country_name>/<city_name>')
 def city_weather(country_name: str, city_name: str) -> str | tuple[str, int]:
     try:
-        result = api_fetch(country_name, city_name)
+        city_weather_data = api_fetch(country_name, city_name)
     except CityNotFoundError:
         return 'City not Found', 404
-    return (f"Country: {country_name}. City: {city_name}. Temperature: {result.temp}. "
-            f"Time since updated: {time.time() - result.time}")
+    time_since_updated = time.time() - city_weather_data.time
+    return render_template('city_weather.html',
+                           city_weather=city_weather_data,
+                           time_since_updated=time_since_updated)
 
 
 def api_fetch(country_name: str, city_name: str) -> WeatherData:
